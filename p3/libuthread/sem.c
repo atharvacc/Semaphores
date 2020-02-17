@@ -38,24 +38,46 @@ int sem_down(sem_t sem)
 	else if(sem->count > 0){ 
 		sem->count--;
 	}// If can decrement then decrement
-	else if (sem->count == 0){
+	else if (sem->count <= 0){
 		pthread_t* curTid = malloc(sizeof(pthread_t));
 		curTid = pthread_self();
 		queue_enqueue(sem->BLOCKED, curTid);
 		thread_block();
-	} // Else if count is 0 then block and wait
+	} // Else if count is 0 or negative then block and wait
 	return 0;
 }
 
 int sem_up(sem_t sem)
 {
-	if(sem == NULL){
+	pthread_t* blockedTid = malloc(sizeof(pthread_t));
+	if(sem == NULL){ 
+		free(blockedTid);
 		return -1;
+	}// If sem is null then return -1
+	
+	else if (queue_dequeue(sem->BLOCKED,blockedTid) == 0){
+		thread_unblock(blockedTid);
+		free(blockedTid);
+	}// Then dequee was succesfull 
+	else{
+		free(blockedTid);
+		sem->count++;
 	}
+	return 0;
 }
 
 int sem_getvalue(sem_t sem, int *sval)
 {
-	/* TODO Phase 1 */
+	if(sem == NULL || sval == NULL){
+		return -1;
+	}
+	else if(sem->count > 0){
+		*sval = sem->count;
+		
+	}
+	else if (sem->count == 0){
+		*sval = -1 * queue_length(sem->BLOCKED);
+	}
+	return 0;
 }
 
