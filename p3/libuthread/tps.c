@@ -12,6 +12,9 @@
 #include "thread.h"
 #include "tps.h"
 
+struct page *page_t;
+
+/* memoryStorage stores the tid of the thread and a pointer to its page struct*/
 struct memoryStorage{
 	pthread_t* tid;
 	char* mmapPtr;
@@ -31,12 +34,51 @@ static int find_tid(void *data, void *arg)
     return 0;
 }
 
+// segv_handler - segmentation fault handler
+// distinguishes between real segmentation faults and TPS protection faults
+static void segv_handler(int sig, siginfo_t *si, void *context)
+{
+    /*
+     * Get the address corresponding to the beginning of the page where the
+     * fault occurred
+     */
+    void *p_fault = (void*)((uintptr_t)si->si_addr & ~(TPS_SIZE - 1));
+
+		page_t foundPage = NULL;
+
+		queue_iterate(memoryQUEUE, find_tid, (void*)p_fault, (void**)&foundPage);
+
+    /*
+     * Iterate through all the TPS areas and find if p_fault matches one of them
+     */
+    if (foundPage != NULL)
+        /* Printf the following error message */
+        fprintf(stderr, "TPS protection error!\n");
+
+    /* In any case, restore the default signal handlers */
+    signal(SIGSEGV, SIG_DFL);
+    signal(SIGBUS, SIG_DFL);
+    /* And transmit the signal again in order to cause the program to crash */
+    raise(sig);
+}
+
 
 int tps_init(int segv)
 {
 	//TODO//
+
+	if (segv) {
+  	struct sigaction sa;
+
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_SIGINFO;
+    sa.sa_sigaction = segv_handler;
+    sigaction(SIGBUS, &sa, NULL);
+    sigaction(SIGSEGV, &sa, NULL);
+  }
+
 	memoryQUEUE = queue_create();
-	printf("Done creating memoryQueue \n ");
+	printf("Done creating memoryQUEUE \n ");
 	return 0;
 }
 
@@ -49,7 +91,7 @@ int tps_create(void)
 	if(mptr == MAP_FAILED){
 		return -1;
 	} // If failed in memory creation
-	
+
 	struct memoryStorage *tempStorage = malloc(sizeof(struct memoryStorage));
 	tempStorage->tid = curTid;
 	tempStorage->mmapPtr = mptr;
@@ -63,9 +105,9 @@ int tps_destroy(void)
 	pthread_t *curTid = malloc(sizeof(pthread_t));
 	curTid = pthread_self;
 	void* tempStorage = NULL;
-	if(queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage) == 0){
+	if(queue_iterate(memoryQUEUE, find_tid, (void*)curTid, (void**) &tempStorage) == 0) {
 		printf("In Destory\n");
-		printf("Len of queue is :%d \n", queue_length(memoryQUEUE));	
+		printf("Len of queue is :%d \n", queue_length(memoryQUEUE));
 		if (tempStorage == NULL){
 			return -1;
 		} // If no tid is found
@@ -74,7 +116,7 @@ int tps_destroy(void)
 			struct memoryStorage *temp = (struct memoryStorage*) tempStorage;
 			free(temp-> mmapPtr);
 			queue_delete(memoryQUEUE, temp);
-		} // if tid is found then delete it 
+		} // if tid is found then delete it
 	}
 	return 0;
 }
@@ -91,7 +133,6 @@ int tps_write(size_t offset, size_t length, void *buffer)
 
 int tps_clone(pthread_t tid)
 {
-	
+
 	return 0;
 }
-
