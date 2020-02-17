@@ -67,7 +67,7 @@ int sem_up(sem_t sem)
 	
 	else if (queue_dequeue(sem->BLOCKED,(void**) &blockedTid) == 0){
 		thread_unblock(blockedTid);
-		free(blockedTid);
+		//free(blockedTid);
 	}// Then dequee was succesfull 
 	else{
 		sem->count++;
