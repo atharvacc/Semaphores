@@ -83,6 +83,7 @@ int sem_getvalue(sem_t sem, int *sval)
 {
 	enter_critical_section();
 	if(sem == NULL || sval == NULL){
+		exit_critical_section();
 		return -1;
 	}
 	else if(sem->count > 0){
