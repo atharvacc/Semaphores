@@ -1,8 +1,8 @@
 # Target library
 lib := libuthread.a
 
-objs := queue.o thread.o sem.o
-objs1:= sem.o
+objs := queue.o thread.o sem.o tps.o
+objs1:= sem.o tps.o
 
 CC := gcc
 CFLAGS := -Wall -Wextra
@@ -14,6 +14,8 @@ libuthread.a: $(objs)
 	ar rcs libuthread.a $(objs)
 
 sem.o: sem.c sem.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+tps.o: tps.c tps.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
