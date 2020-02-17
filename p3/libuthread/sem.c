@@ -61,17 +61,15 @@ int sem_up(sem_t sem)
 	enter_critical_section();
 	pthread_t* blockedTid = malloc(sizeof(pthread_t));
 	if(sem == NULL){ 
-		free(blockedTid);
 		exit_critical_section();
 		return -1;
 	}// If sem is null then return -1
 	
-	else if (queue_dequeue(sem->BLOCKED,blockedTid) == 0){
+	else if (queue_dequeue(sem->BLOCKED,(void**) &blockedTid) == 0){
 		thread_unblock(blockedTid);
 		free(blockedTid);
 	}// Then dequee was succesfull 
 	else{
-		free(blockedTid);
 		sem->count++;
 	}
 	exit_critical_section();
