@@ -43,7 +43,7 @@ int sem_down(sem_t sem)
 		exit_critical_section();
 		return -1;
 	}// If sem is NULL
-	else if(sem->count > 0){ 
+	else if(sem->count != 0){ 
 		sem->count--;
 	}// If can decrement then decrement
 	else if (sem->count <= 0){
