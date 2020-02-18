@@ -72,9 +72,11 @@ int tps_destroy(void)
 	void* tempStorage = NULL;
 	if(queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage) == 0){	
 		if (tempStorage == NULL){
+			printf("TID WAS NOT FOUND\n");
 			return -1;
 		} // If no tid is found
 		else{
+			printf("TID WAS FOUND\n");
 			struct memoryStorage *temp = (struct memoryStorage*) tempStorage;
 			free(temp-> mmapPtr);
 			queue_delete(memoryQUEUE, temp);
