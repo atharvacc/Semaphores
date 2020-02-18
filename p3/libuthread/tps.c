@@ -18,7 +18,7 @@ struct memoryStorage{
 	pthread_t* tid;
 	char* mmapPtr;
 };
-/* TODO: Phase 2 */
+
 queue_t memoryQUEUE;
 
 
@@ -26,7 +26,7 @@ queue_t memoryQUEUE;
 static int find_tid(void *data, void *arg)
 {
     struct memoryStorage  *a = (struct memoryStorage*)data;
-    int match = (int)(long)arg;
+    pthread_t match = (pthread_t)arg;
     if (a->tid == match){
         return 1;
     }
