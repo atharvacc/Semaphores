@@ -12,6 +12,8 @@
 #include "thread.h"
 #include "tps.h"
 
+struct page *page_t;
+
 struct memoryStorage{
 	pthread_t* tid;
 	char* mmapPtr;
