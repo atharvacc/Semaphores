@@ -12,22 +12,30 @@
 #include "thread.h"
 #include "tps.h"
 
-struct page *page_t;
+static queue_t memoryQUEUE;
+
+typedef struct tps *tps_t;
+typedef struct page *page_t;
 
 /* memoryStorage stores the tid of the thread and a pointer to its page struct*/
 struct memoryStorage{
 	pthread_t* tid;
 	char* mmapPtr;
 };
-/* TODO: Phase 2 */
-queue_t memoryQUEUE;
 
+// page structure containing the memory page's address and reference counter
+struct page {
+	void *tpsLocation;
+	int reference_counter;
+}
+
+/* TODO: Phase 2 */
 
 /* Find TID in queue */
 static int find_tid(void *data, void *arg)
 {
     struct memoryStorage  *a = (struct memoryStorage*)data;
-    int match = (int)(long)arg;
+    pthread_t match = (pthread_t)arg;
     if (a->tid == match){
         return 1;
     }
@@ -66,7 +74,6 @@ static void segv_handler(int sig, siginfo_t *si, void *context)
 int tps_init(int segv)
 {
 	//TODO//
-
 	if (segv) {
   	struct sigaction sa;
 
@@ -84,19 +91,23 @@ int tps_init(int segv)
 
 int tps_create(void)
 {
+	printf("In Create \n");
 	pthread_t *curTid = malloc(sizeof(pthread_t));
-	curTid = pthread_self;
+	curTid = pthread_self();
 	printf("CurTID is %d \n", curTid);
-	char *mptr = mmap(NULL,TPS_SIZE, PROT_NONE, MAP_ANON,-1,0); // Create memory
+	void *mptr = NULL;
+	mptr = mmap(NULL,TPS_SIZE, PROT_NONE, MAP_PRIVATE| MAP_ANON,-1,0); // Create memory
 	if(mptr == MAP_FAILED){
 		return -1;
 	} // If failed in memory creation
 
 	struct memoryStorage *tempStorage = malloc(sizeof(struct memoryStorage));
 	tempStorage->tid = curTid;
-	tempStorage->mmapPtr = mptr;
+	tempStorage->mmapPtr = (char*) mptr;
+
 	queue_enqueue(memoryQUEUE, tempStorage);
 	printf("Queue lenght in create is %d \n", queue_length(memoryQUEUE));
+	printf("Done w create \n");
 	return 0;
 }
 
@@ -133,6 +144,26 @@ int tps_write(size_t offset, size_t length, void *buffer)
 
 int tps_clone(pthread_t tid)
 {
+	// need to allocate a new TPS object for the calling thread, but have the page structure be shared with the target thread and updated accordingly
+	tps_t foundTPS = NULL;
+	queue_iterate(memoryQUEUE, find_tid, (void*)&tid, (void**)&foundTPS);
 
+	// check to see if it exists
+	if(foundTPS != NULL) {
+		tps_create(); //make a new TPS for the current thread
+		tps_t curTID = NULL;
+		queue_iterate(memoryQUEUE, find_tid, (void*)pthread_self(), (void**)&curTID);
+		// check to see if TPS we just created was found or not
+		if(curTID != NULL) {
+			// links the new TPS with our target TPS
+			tpsLink(curTID, foundTPS->page);
+		}
+		else if (curTID == NULL){
+			return -1;
+		}
+	} //if TPS we want to clone does not exist
+	else if (foundTPS == NULL){
+		return -1;
+	}
 	return 0;
 }
