@@ -49,14 +49,15 @@ int tps_create(void)
 	pthread_t *curTid = malloc(sizeof(pthread_t));
 	curTid = pthread_self();
 	printf("CurTID is %d \n", curTid);
-	char *mptr = mmap(NULL,TPS_SIZE, PROT_NONE, MAP_ANON,-1,0); // Create memory
+	void *mptr = NULL;
+	mptr = mmap(NULL,TPS_SIZE, PROT_NONE, MAP_PRIVATE| MAP_ANON,-1,0); // Create memory
 	if(mptr == MAP_FAILED){
 		return -1;
 	} // If failed in memory creation
 	
 	struct memoryStorage *tempStorage = malloc(sizeof(struct memoryStorage));
 	tempStorage->tid = curTid;
-	tempStorage->mmapPtr = mptr;
+	tempStorage->mmapPtr = (char*) mptr;
 	
 	queue_enqueue(memoryQUEUE, tempStorage);
 	printf("Queue lenght in create is %d \n", queue_length(memoryQUEUE));
