@@ -79,7 +79,8 @@ int tps_destroy(void)
 		else{
 			printf("TID WAS FOUND\n");
 			struct memoryStorage *temp = (struct memoryStorage*) tempStorage;
-			free(temp-> mmapPtr);
+			munmap(temp->mmapPtr, TPS_SIZE);
+			//free(temp-> mmapPtr);
 			queue_delete(memoryQUEUE, temp);
 		} // if tid is found then delete it 
 	}
