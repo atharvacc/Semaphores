@@ -61,14 +61,14 @@ int tps_create(void)
 	queue_enqueue(memoryQUEUE, tempStorage);
 	printf("Queue lenght in create is %d \n", queue_length(memoryQUEUE));
 	printf("Done w create \n");
-	return 0;>
+	return 0;
 }
 
 int tps_destroy(void)
 {	printf("In Destory \n");
 	pthread_t *curTid = malloc(sizeof(pthread_t));
-	printf("current TID is %d \n", curTid);
 	curTid = pthread_self();
+	printf("current TID is %d \n", curTid);
 	void* tempStorage = NULL;
 	if(queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage) == 0){	
 		if (tempStorage == NULL){
