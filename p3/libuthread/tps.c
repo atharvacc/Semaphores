@@ -37,15 +37,17 @@ static int find_tid(void *data, void *arg)
 int tps_init(int segv)
 {
 	//TODO//
+	printf("In tps init \n");
 	memoryQUEUE = queue_create();
-	printf("Done creating memoryQueue \n ");
+	printf("Done w tps init \n");
 	return 0;
 }
 
 int tps_create(void)
 {
+	printf("In Create \n");
 	pthread_t *curTid = malloc(sizeof(pthread_t));
-	curTid = pthread_self;
+	curTid = pthread_self();
 	printf("CurTID is %d \n", curTid);
 	char *mptr = mmap(NULL,TPS_SIZE, PROT_NONE, MAP_ANON,-1,0); // Create memory
 	if(mptr == MAP_FAILED){
@@ -55,29 +57,30 @@ int tps_create(void)
 	struct memoryStorage *tempStorage = malloc(sizeof(struct memoryStorage));
 	tempStorage->tid = curTid;
 	tempStorage->mmapPtr = mptr;
+	
 	queue_enqueue(memoryQUEUE, tempStorage);
 	printf("Queue lenght in create is %d \n", queue_length(memoryQUEUE));
-	return 0;
+	printf("Done w create \n");
+	return 0;>
 }
 
 int tps_destroy(void)
-{
+{	printf("In Destory \n");
 	pthread_t *curTid = malloc(sizeof(pthread_t));
-	curTid = pthread_self;
+	printf("current TID is %d \n", curTid);
+	curTid = pthread_self();
 	void* tempStorage = NULL;
-	if(queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage) == 0){
-		printf("In Destory\n");
-		printf("Len of queue is :%d \n", queue_length(memoryQUEUE));	
+	if(queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage) == 0){	
 		if (tempStorage == NULL){
 			return -1;
 		} // If no tid is found
 		else{
-			printf("In here\n");
 			struct memoryStorage *temp = (struct memoryStorage*) tempStorage;
 			free(temp-> mmapPtr);
 			queue_delete(memoryQUEUE, temp);
 		} // if tid is found then delete it 
 	}
+	printf("Done w Destroy \n");
 	return 0;
 }
 
