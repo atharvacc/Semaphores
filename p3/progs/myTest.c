@@ -23,6 +23,6 @@ int main(int argc, char **argv)
 
 	pthread_create(&tid, NULL, thread1, NULL);
 	pthread_join(tid, NULL);
-	printf("tid was assigned to %d \n", tid);
+	printf("tid was assigned to %d \n", (int) tid);
 	printf("Back in main \n");
 }
