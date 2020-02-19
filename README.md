@@ -15,3 +15,7 @@
 - 5.3.1 Phase 2.1: Unprotected TPS with naive cloning
 - Test 5.3.1
 
+### Updates from Julie:
+- Incoporated phase 2.2
+- Added test cases
+- Started report
