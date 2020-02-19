@@ -150,17 +150,23 @@ int tps_clone(pthread_t tid)
 		return -1;
 	} // If the tid provided did not have a TPS
 	else{
+		printf("Got here\n");
 	void *mptr = NULL;
 	mptr = mmap(NULL,TPS_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE| MAP_ANON,-1,0); // Create memory
+	printf("Done creating mem \n");
 	if(mptr == MAP_FAILED){
 		return -1;
 	} // If failed in memory creation
+
 	struct memoryStorage *cloneStorage = malloc(sizeof(struct memoryStorage));
 	cloneStorage->tid = curTid;
 	cloneStorage->mmapPtr = (char*) mptr;
 	struct memoryStorage *temp = (struct memoryStorage*) tempStorage1;
+	printf("Done creating clone storage \n");
 	memcpy( cloneStorage->mmapPtr, temp->mmapPtr, TPS_SIZE);
+	printf("Done w memcpy \n");
 	mprotect(cloneStorage->mmapPtr, TPS_SIZE, PROT_NONE);
+	printf("Done w mprotect \n");
 	queue_enqueue(memoryQUEUE, cloneStorage);
 	} // Can be cloned
 	printf("Dones clone \n");
