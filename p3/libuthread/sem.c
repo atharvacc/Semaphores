@@ -22,7 +22,6 @@ sem_t sem_create(size_t count)
 
 int sem_destroy(sem_t sem)
 {
-	printf("In destroy \n");
 	enter_critical_section();
 
 	if( sem==NULL || queue_length(sem->BLOCKED)!=0 ) {
@@ -34,13 +33,11 @@ int sem_destroy(sem_t sem)
 		free(sem);
 	}
 	exit_critical_section();
-	printf("Done destroy \n");
 	return 0;
 }
 
 int sem_down(sem_t sem)
 {
-	printf("In down \n");
 	enter_critical_section();
 	if(sem == NULL){ 
 		exit_critical_section();
@@ -56,13 +53,11 @@ int sem_down(sem_t sem)
 		thread_block();	
 	} // Else if count is 0 or negative then block and wait
 	exit_critical_section();
-	printf("Done down \n");
 	return 0;
 }
 
 int sem_up(sem_t sem)
 {
-	printf("In up \n");
 	enter_critical_section();
 	pthread_t* blockedTid = malloc(sizeof(pthread_t));
 	if(sem == NULL){ 
@@ -77,13 +72,11 @@ int sem_up(sem_t sem)
 		sem->count++;
 	}
 	exit_critical_section();
-	printf("Done up \n");
 	return 0;
 }
 
 int sem_getvalue(sem_t sem, int *sval)
 {
-	printf("In getval \n");
 	enter_critical_section();
 	if(sem == NULL || sval == NULL){
 		exit_critical_section();
@@ -96,7 +89,6 @@ int sem_getvalue(sem_t sem, int *sval)
 	else if (sem->count == 0){
 		*sval = -1 * queue_length(sem->BLOCKED);
 	}
-	printf("Done getval \n");
 	exit_critical_section();
 	return 0;
 }
