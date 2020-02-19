@@ -33,11 +33,50 @@ static int find_tid(void *data, void *arg)
     return 0;
 }
 
+static int find_char(void *data, void *arg)
+{
+    struct memoryStorage  *a = (struct memoryStorage*)data;
+    char* match = (char*)arg;
+    if (a->mmapPtr == match){
+        return 1;
+    }
+    return 0;
+}
 
+static void segv_handler(int sig, siginfo_t *si, __attribute__((unused)) void *context)
+{
+    /*
+     * Get the address corresponding to the beginning of the page where the
+     * fault occurred
+     */
+    void *p_fault = (void*)((uintptr_t)si->si_addr & ~(TPS_SIZE - 1));
+	void* tempStorage = NULL;
+    /*
+     * Iterate through all the TPS areas and find if p_fault matches one of them
+     */
+	queue_iterate(memoryQUEUE,find_char, (void*)p_fault,(void**) &tempStorage);
+    if (tempStorage != NULL)
+        /* Printf the following error message */
+        fprintf(stderr, "TPS protection error!\n");
+
+    /* In any case, restore the default signal handlers */
+    signal(SIGSEGV, SIG_DFL);
+    signal(SIGBUS, SIG_DFL);
+    /* And transmit the signal again in order to cause the program to crash */
+    raise(sig);
+}
 int tps_init(int segv)
 {
+    if (segv) {
+        struct sigaction sa;
 
-	
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_SIGINFO;
+        sa.sa_sigaction = segv_handler;
+        sigaction(SIGBUS, &sa, NULL);
+        sigaction(SIGSEGV, &sa, NULL);
+    }
+
 	memoryQUEUE = queue_create();
 	
 	return 0;
@@ -153,7 +192,7 @@ int tps_clone(pthread_t tid)
 	cloneStorage->tid = curTid;
 	cloneStorage->mmapPtr = (char*) mptr;
 	struct memoryStorage *temp = (struct memoryStorage*) tempStorage1;
-	mprotect(temp->mmapPtr, TPS_SIZE, PROT_READ);
+	//mprotect(temp->mmapPtr, TPS_SIZE, PROT_READ);
 	memcpy( cloneStorage->mmapPtr, temp->mmapPtr, TPS_SIZE);
 	mprotect(cloneStorage->mmapPtr, TPS_SIZE, PROT_NONE);
 	mprotect(temp->mmapPtr, TPS_SIZE, PROT_NONE);
