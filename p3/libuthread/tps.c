@@ -55,6 +55,7 @@ static void segv_handler(int sig, siginfo_t *si, __attribute__((unused)) void *c
      * Iterate through all the TPS areas and find if p_fault matches one of them
      */
 	queue_iterate(memoryQUEUE,find_char, (void*)p_fault,(void**) &tempStorage);
+	
     if (tempStorage != NULL)
         /* Printf the following error message */
         fprintf(stderr, "TPS protection error!\n");
@@ -192,7 +193,7 @@ int tps_clone(pthread_t tid)
 	cloneStorage->tid = curTid;
 	cloneStorage->mmapPtr = (char*) mptr;
 	struct memoryStorage *temp = (struct memoryStorage*) tempStorage1;
-	//mprotect(temp->mmapPtr, TPS_SIZE, PROT_READ);
+	mprotect(temp->mmapPtr, TPS_SIZE, PROT_READ);
 	memcpy( cloneStorage->mmapPtr, temp->mmapPtr, TPS_SIZE);
 	mprotect(cloneStorage->mmapPtr, TPS_SIZE, PROT_NONE);
 	mprotect(temp->mmapPtr, TPS_SIZE, PROT_NONE);
