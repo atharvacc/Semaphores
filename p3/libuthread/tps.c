@@ -12,11 +12,13 @@
 #include "thread.h"
 #include "tps.h"
 
+struct page *page_t;
+
 struct memoryStorage{
 	pthread_t* tid;
 	char* mmapPtr;
 };
-/* TODO: Phase 2 */
+
 queue_t memoryQUEUE;
 
 
@@ -24,7 +26,7 @@ queue_t memoryQUEUE;
 static int find_tid(void *data, void *arg)
 {
     struct memoryStorage  *a = (struct memoryStorage*)data;
-    int match = (int)(long)arg;
+    pthread_t match = (pthread_t)arg;
     if (a->tid == match){
         return 1;
     }
@@ -34,45 +36,43 @@ static int find_tid(void *data, void *arg)
 
 int tps_init(int segv)
 {
-	//TODO//
+
+	
 	memoryQUEUE = queue_create();
-	printf("Done creating memoryQueue \n ");
+	
 	return 0;
 }
 
 int tps_create(void)
 {
 	pthread_t *curTid = malloc(sizeof(pthread_t));
-	curTid = pthread_self;
-	printf("CurTID is %d \n", curTid);
-	char *mptr = mmap(NULL,TPS_SIZE, PROT_NONE, MAP_ANON,-1,0); // Create memory
+	curTid = pthread_self();
+	void *mptr = NULL;
+	mptr = mmap(NULL,TPS_SIZE, PROT_NONE, MAP_PRIVATE| MAP_ANON,-1,0); // Create memory
 	if(mptr == MAP_FAILED){
 		return -1;
 	} // If failed in memory creation
 	
 	struct memoryStorage *tempStorage = malloc(sizeof(struct memoryStorage));
 	tempStorage->tid = curTid;
-	tempStorage->mmapPtr = mptr;
+	tempStorage->mmapPtr = (char*) mptr;
+	
 	queue_enqueue(memoryQUEUE, tempStorage);
-	printf("Queue lenght in create is %d \n", queue_length(memoryQUEUE));
 	return 0;
 }
 
 int tps_destroy(void)
-{
+{	
 	pthread_t *curTid = malloc(sizeof(pthread_t));
-	curTid = pthread_self;
+	curTid = pthread_self();
 	void* tempStorage = NULL;
-	if(queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage) == 0){
-		printf("In Destory\n");
-		printf("Len of queue is :%d \n", queue_length(memoryQUEUE));	
+	if(queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage) == 0){	
 		if (tempStorage == NULL){
 			return -1;
 		} // If no tid is found
 		else{
-			printf("In here\n");
 			struct memoryStorage *temp = (struct memoryStorage*) tempStorage;
-			free(temp-> mmapPtr);
+			munmap(temp->mmapPtr, TPS_SIZE);
 			queue_delete(memoryQUEUE, temp);
 		} // if tid is found then delete it 
 	}
@@ -81,17 +81,85 @@ int tps_destroy(void)
 
 int tps_read(size_t offset, size_t length, void *buffer)
 {
+	if( ((offset+length) > TPS_SIZE) || (buffer == NULL) ){
+		return -1;
+	} // OUT OF BOUND
+	pthread_t *curTid = malloc(sizeof(pthread_t));
+	curTid = pthread_self();
+	void* tempStorage = NULL;
+	if(queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage) == 0){	
+		if (tempStorage == NULL){
+			return -1;
+		} // If no tid is found
+		else{
+			struct memoryStorage *temp = (struct memoryStorage*) tempStorage;
+			mprotect(temp->mmapPtr, TPS_SIZE, PROT_READ);
+			memcpy(buffer, temp->mmapPtr + offset, length );
+			mprotect(temp->mmapPtr, TPS_SIZE, PROT_NONE);
+		}// TID WAS FOUND
+	}
 	return 0;
 }
 
 int tps_write(size_t offset, size_t length, void *buffer)
 {
+	if( ((offset+length) > TPS_SIZE) || (buffer == NULL) ){
+		return -1;
+	} // OUT OF BOUND
+	pthread_t *curTid = malloc(sizeof(pthread_t));
+	curTid = pthread_self();
+	void* tempStorage = NULL;
+	if(queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage) == 0){	
+		if (tempStorage == NULL){
+			return -1;
+		} // If no tid is found
+		else{
+			struct memoryStorage *temp = (struct memoryStorage*) tempStorage;
+			mprotect(temp->mmapPtr, TPS_SIZE, PROT_WRITE);
+			memcpy( temp->mmapPtr + offset, buffer, length );
+			mprotect(temp->mmapPtr, TPS_SIZE, PROT_NONE);
+		}// TID WAS FOUND
+	}
 	return 0;
 }
 
 int tps_clone(pthread_t tid)
 {
+	pthread_t *curTid = malloc(sizeof(pthread_t));
+	curTid = pthread_self();
+	void* tempStorage = NULL;
+	void* tempStorage1 = NULL;
+	//Check if currently running thread has a TPS
+	queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage);
 	
+	// Check if TPS is available for tid provided
+	queue_iterate(memoryQUEUE,find_tid, (void*)tid,(void**) &tempStorage1);
+	if(tempStorage != NULL){
+		return -1;
+	} // If Currently running thread did have a TPS
+	else if (tempStorage1 == NULL){
+		return -1;
+	} // If the tid provided did not have a TPS
+	else{
+		
+	void *mptr = NULL;
+	mptr = mmap(NULL,TPS_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE| MAP_ANON,-1,0); // Create memory
+	
+	if(mptr == MAP_FAILED){
+		return -1;
+	} // If failed in memory creation
+
+	struct memoryStorage *cloneStorage = malloc(sizeof(struct memoryStorage));
+	cloneStorage->tid = curTid;
+	cloneStorage->mmapPtr = (char*) mptr;
+	struct memoryStorage *temp = (struct memoryStorage*) tempStorage1;
+	mprotect(temp->mmapPtr, TPS_SIZE, PROT_READ);
+	memcpy( cloneStorage->mmapPtr, temp->mmapPtr, TPS_SIZE);
+	mprotect(cloneStorage->mmapPtr, TPS_SIZE, PROT_NONE);
+	mprotect(temp->mmapPtr, TPS_SIZE, PROT_NONE);
+	queue_enqueue(memoryQUEUE, cloneStorage);
+	} // Can be cloned
+
 	return 0;
 }
 
