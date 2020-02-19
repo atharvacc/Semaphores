@@ -133,6 +133,7 @@ int tps_write(size_t offset, size_t length, void *buffer)
 
 int tps_clone(pthread_t tid)
 {
+	printf("In clone \n");
 	pthread_t *curTid = malloc(sizeof(pthread_t));
 	curTid = pthread_self();
 	void* tempStorage = NULL;
@@ -162,6 +163,7 @@ int tps_clone(pthread_t tid)
 	mprotect(cloneStorage->mmapPtr, TPS_SIZE, PROT_NONE);
 	queue_enqueue(memoryQUEUE, cloneStorage);
 	} // Can be cloned
+	printf("Dones clone \n");
 
 	return 0;
 }
