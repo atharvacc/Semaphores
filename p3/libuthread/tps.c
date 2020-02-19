@@ -163,9 +163,11 @@ int tps_clone(pthread_t tid)
 	cloneStorage->mmapPtr = (char*) mptr;
 	struct memoryStorage *temp = (struct memoryStorage*) tempStorage1;
 	printf("Done creating clone storage \n");
+	mprotect(temp->mmapPtr, TPS_SIZE, PROT_READ);
 	memcpy( cloneStorage->mmapPtr, temp->mmapPtr, TPS_SIZE);
 	printf("Done w memcpy \n");
 	mprotect(cloneStorage->mmapPtr, TPS_SIZE, PROT_NONE);
+	mprotect(temp->mmapPtr, TPS_SIZE, PROT_NONE);
 	printf("Done w mprotect \n");
 	queue_enqueue(memoryQUEUE, cloneStorage);
 	} // Can be cloned
