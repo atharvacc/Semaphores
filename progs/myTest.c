@@ -92,6 +92,7 @@ void* test_offset(void* ptr) {
     memset(buffer, 0, TPS_SIZE);
   	tps_write(6, strlen(msg1) + 1, msg1);
   	tps_read(0, TPS_SIZE, buffer);
+    printf("We read %s \n", buffer);
   	assert(!memcmp(msg2, buffer, TPS_SIZE));
 
     // destroy the TPS
@@ -202,10 +203,10 @@ int main(int argc, char*argv[]) {
     pthread_join(tid, NULL);
 
     
-    /* Create thread 3: test_offset and wait 
+    /* Create thread 3: test_offset and wait */
     printf("\nTesting TPS read and write at specified offset\n");
     pthread_create(&tid, NULL, test_offset, NULL);
-    pthread_join(tid, NULL); */
+    pthread_join(tid, NULL); 
 
     /* Create thread 4: test_clone */
     printf("\nTesting TPS clone\n");
