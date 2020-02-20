@@ -12,17 +12,24 @@
 #include "thread.h"
 #include "tps.h"
 
+
 struct page {
 	char* mmapPtr;
 	int refCounter;
 };
+
 
 struct memoryStorage{
 	pthread_t* tid;
 	struct page* myPage;
 };
 
-queue_t memoryQUEUE;
+struct page {
+	void *tpsLocation;
+	int reference_counter;
+}
+
+static queue_t memoryQUEUE;
 
 
 /* Find TID in queue */
@@ -36,6 +43,7 @@ static int find_tid(void *data, void *arg)
     return 0;
 }
 
+
 static int find_char(void *data, void *arg)
 {
     struct memoryStorage  *a = (struct memoryStorage*)data;
@@ -44,7 +52,8 @@ static int find_char(void *data, void *arg)
         return 1;
     }
     return 0;
-}
+
+
 
 static void segv_handler(int sig, siginfo_t *si, __attribute__((unused)) void *context)
 {
@@ -71,6 +80,7 @@ static void segv_handler(int sig, siginfo_t *si, __attribute__((unused)) void *c
 }
 int tps_init(int segv)
 {
+
     if (segv) {
         struct sigaction sa;
 
@@ -81,8 +91,8 @@ int tps_init(int segv)
         sigaction(SIGSEGV, &sa, NULL);
     }
 
+
 	memoryQUEUE = queue_create();
-	
 	return 0;
 }
 
