@@ -43,12 +43,12 @@ int sem_down(sem_t sem)
 	else if(sem->count != 0){ 
 		sem->count--;
 	}// If can decrement then decrement
-	else if (sem->count <= 0){
+	else if (sem->count == 0){
 		pthread_t* curTid = malloc(sizeof(pthread_t));
 		curTid = pthread_self();
 		queue_enqueue(sem->BLOCKED, curTid);
 		thread_block();	
-	} // Else if count is 0 or negative then block and wait
+	} // Else if count is 0 
 	exit_critical_section();
 	return 0;
 }
