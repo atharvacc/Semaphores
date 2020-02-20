@@ -12,26 +12,23 @@ struct semaphore {
 
 sem_t sem_create(size_t count)
 {
-	
 	sem_t newSemaphore = malloc(sizeof(struct semaphore));
 	newSemaphore->count =count;
 	newSemaphore->BLOCKED = queue_create();
-	
 	return newSemaphore;
 }
 
 int sem_destroy(sem_t sem)
 {
 	enter_critical_section();
-
 	if( sem==NULL || queue_length(sem->BLOCKED)!=0 ) {
 		exit_critical_section();
 		return -1;
-	}
+	} // If sem is null or something is being blocked
 	else{
 		queue_destroy(sem->BLOCKED);
 		free(sem);
-	}
+	}// Can destroy 
 	exit_critical_section();
 	return 0;
 }
