@@ -90,7 +90,7 @@ void* test_offset(void* ptr) {
     assert(latest_mmap_addr != NULL);
 
     memset(buffer, 0, TPS_SIZE);
-  	tps_write(6, strlen(msg1) + 1, msg1);
+  	tps_write(8, strlen(msg1) + 1, msg1);
   	tps_read(0, TPS_SIZE, buffer);
   	assert(!memcmp(msg2, buffer, TPS_SIZE));
 
