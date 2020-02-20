@@ -96,10 +96,12 @@ int tps_create(void)
 		return -1;
 	} // If failed in memory creation
 	
+	// Create new TPS 
 	struct memoryStorage *tempStorage = malloc(sizeof(struct memoryStorage));
 	tempStorage->myPage = malloc(sizeof(struct page));
 	tempStorage->tid = curTid;
 	tempStorage->myPage->mmapPtr = (char*) mptr;
+	tempStorage->myPage->refCounter = 1;
 	
 	queue_enqueue(memoryQUEUE, tempStorage);
 	return 0;
@@ -159,9 +161,29 @@ int tps_write(size_t offset, size_t length, void *buffer)
 		} // If no tid is found
 		else{
 			struct memoryStorage *temp = (struct memoryStorage*) tempStorage;
-			mprotect(temp->myPage->mmapPtr, TPS_SIZE, PROT_WRITE);
-			memcpy( temp->myPage->mmapPtr + offset, buffer, length );
-			mprotect(temp->myPage->mmapPtr, TPS_SIZE, PROT_NONE);
+			if(temp->myPage->refCounter == 1){
+				mprotect(temp->myPage->mmapPtr, TPS_SIZE, PROT_WRITE);
+				memcpy( temp->myPage->mmapPtr + offset, buffer, length );
+				mprotect(temp->myPage->mmapPtr, TPS_SIZE, PROT_NONE);
+			}// Ref counter has 1.
+			else if (temp->myPage->refCounter > 1){
+				// Decrement old page refCounter
+				struct page* old_page = temp-> myPage;
+				old_page->refCounter--;
+				// Initialize new memory and copy the contents to it and then write
+				void *mptr = NULL;
+				mptr = mmap(NULL,TPS_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE| MAP_ANON,-1,0); // Create memory
+				temp->myPage = malloc(sizeof(struct page));
+				temp->myPage->refCounter = 1;
+				temp->myPage->mmapPtr = (char*) mptr;
+
+				mprotect(old_page->mmapPtr, TPS_SIZE, PROT_READ);
+				memcpy(temp->myPage->mmapPtr, old_page->mmapPtr, TPS_SIZE);
+				mprotect(old_page->mmapPtr, TPS_SIZE, PROT_NONE);
+				memcpy(temp->myPage-> mmapPtr + offset, buffer, length);
+				mprotect(temp->myPage->mmapPtr, TPS_SIZE, PROT_NONE);
+			}// Ref counter is superior to 1. Copy the page contents and write it
+			
 		}// TID WAS FOUND
 	}
 	return 0;
@@ -186,13 +208,12 @@ int tps_clone(pthread_t tid)
 	} // If the tid provided did not have a TPS
 	else{
 		
+	/* for the previous part
 	void *mptr = NULL;
 	mptr = mmap(NULL,TPS_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE| MAP_ANON,-1,0); // Create memory
-	
 	if(mptr == MAP_FAILED){
 		return -1;
 	} // If failed in memory creation
-
 	struct memoryStorage *cloneStorage = malloc(sizeof(struct memoryStorage));
 	cloneStorage->myPage = malloc(sizeof(struct page));
 	cloneStorage->tid = curTid;
@@ -202,6 +223,18 @@ int tps_clone(pthread_t tid)
 	memcpy( cloneStorage->myPage->mmapPtr, temp->myPage->mmapPtr, TPS_SIZE);
 	mprotect(cloneStorage->myPage->mmapPtr, TPS_SIZE, PROT_NONE);
 	mprotect(temp->myPage->mmapPtr, TPS_SIZE, PROT_NONE);
+	queue_enqueue(memoryQUEUE, cloneStorage);
+	*/
+	struct memoryStorage *cloneStorage = malloc(sizeof(struct memoryStorage));
+	cloneStorage->myPage = malloc(sizeof(struct page));
+	struct memoryStorage *temp = (struct memoryStorage*) tempStorage1;
+
+	temp->myPage->refCounter++;
+	cloneStorage->tid = curTid;
+	cloneStorage->myPage = temp->myPage;
+	
+	
+	
 	queue_enqueue(memoryQUEUE, cloneStorage);
 	} // Can be cloned
 
