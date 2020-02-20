@@ -12,6 +12,8 @@ static pthread_t previous_tid;
 static char msg[TPS_SIZE] = "Hello world!\n";
 static char msg1[TPS_SIZE] = "world!\n";
 static char msg2[TPS_SIZE] = "Goodbye world!\n";
+static char msg3[TPS_SIZE] = "Goodbye ";
+
 
 void *latest_mmap_addr; // global variable to make the address returned by mmap
 void *__real_mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off);
@@ -90,6 +92,7 @@ void* test_offset(void* ptr) {
     assert(latest_mmap_addr != NULL);
 
     memset(buffer, 0, TPS_SIZE);
+    tps_write(0, strlen(msg3) + 1, msg3);
   	tps_write(8, strlen(msg1) + 1, msg1);
   	tps_read(0, TPS_SIZE, buffer);
     printf("We read %s \n", buffer);
