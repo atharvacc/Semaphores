@@ -5,9 +5,10 @@
 #include "sem.h"
 #include "thread.h"
 
+/* Initialize structs to be used later on */
 struct semaphore {
 	int count;
-	queue_t BLOCKED;
+	queue_t BLOCKED; 
 };
 
 sem_t sem_create(size_t count)
@@ -67,7 +68,7 @@ int sem_up(sem_t sem)
 	}// Then dequee was succesfull 
 	else{
 		sem->count++;
-	}
+	}// incrememt count
 	exit_critical_section();
 	return 0;
 }
@@ -78,14 +79,14 @@ int sem_getvalue(sem_t sem, int *sval)
 	if(sem == NULL || sval == NULL){
 		exit_critical_section();
 		return -1;
-	}
+	} // if sem is null or sval is null
 	else if(sem->count > 0){
 		*sval = sem->count;
 		
-	}
+	} // If count is greater than 0
 	else if (sem->count == 0){
 		*sval = -1 * queue_length(sem->BLOCKED);
-	}
+	} // if count is exactly 0
 	exit_critical_section();
 	return 0;
 }

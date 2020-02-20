@@ -13,21 +13,21 @@
 #include "tps.h"
 
 
+/* Initialize structs to be used later on */
 struct page {
 	char* mmapPtr;
 	int refCounter;
 };
-
 
 struct memoryStorage{
 	pthread_t* tid;
 	struct page* myPage;
 };
 
-
-
 static queue_t memoryQUEUE;
 
+
+/* HELPER FUNCTION */
 
 /* Find TID in queue */
 static int find_tid(void *data, void *arg)
@@ -40,7 +40,7 @@ static int find_tid(void *data, void *arg)
     return 0;
 }
 
-
+/* HELPER FUNCTION */
 static int find_char(void *data, void *arg)
 {
     struct memoryStorage  *a = (struct memoryStorage*)data;
@@ -51,6 +51,7 @@ static int find_char(void *data, void *arg)
     return 0;
 }
 
+/* HELPER FUNCTION */
 static void segv_handler(int sig, siginfo_t *si, __attribute__((unused)) void *context)
 {
     /*
@@ -74,23 +75,22 @@ static void segv_handler(int sig, siginfo_t *si, __attribute__((unused)) void *c
     /* And transmit the signal again in order to cause the program to crash */
     raise(sig);
 }
+
+
 int tps_init(int segv)
 {
-
     if (segv) {
         struct sigaction sa;
-
         sigemptyset(&sa.sa_mask);
         sa.sa_flags = SA_SIGINFO;
         sa.sa_sigaction = segv_handler;
         sigaction(SIGBUS, &sa, NULL);
         sigaction(SIGSEGV, &sa, NULL);
     }
-
-
 	memoryQUEUE = queue_create();
 	return 0;
 }
+
 
 int tps_create(void)
 {
@@ -103,18 +103,17 @@ int tps_create(void)
 		exit_critical_section();
 		return -1;
 	} // If failed in memory creation
-	
 	// Create new TPS 
 	struct memoryStorage *tempStorage = malloc(sizeof(struct memoryStorage));
 	tempStorage->myPage = malloc(sizeof(struct page));
 	tempStorage->tid = curTid;
 	tempStorage->myPage->mmapPtr = (char*) mptr;
 	tempStorage->myPage->refCounter = 1;
-	
 	queue_enqueue(memoryQUEUE, tempStorage);
 	exit_critical_section();
 	return 0;
 }
+
 
 int tps_destroy(void)
 {	
@@ -138,6 +137,7 @@ int tps_destroy(void)
 	exit_critical_section();
 	return 0;
 }
+
 
 int tps_read(size_t offset, size_t length, void *buffer)
 {
@@ -164,6 +164,7 @@ int tps_read(size_t offset, size_t length, void *buffer)
 	exit_critical_section();
 	return 0;
 }
+
 
 int tps_write(size_t offset, size_t length, void *buffer)
 {
@@ -197,19 +198,18 @@ int tps_write(size_t offset, size_t length, void *buffer)
 				temp->myPage = malloc(sizeof(struct page));
 				temp->myPage->refCounter = 1;
 				temp->myPage->mmapPtr = (char*) mptr;
-
 				mprotect(old_page->mmapPtr, TPS_SIZE, PROT_READ);
 				memcpy(temp->myPage->mmapPtr, old_page->mmapPtr, TPS_SIZE);
 				mprotect(old_page->mmapPtr, TPS_SIZE, PROT_NONE);
 				memcpy(temp->myPage-> mmapPtr + offset, buffer, length);
 				mprotect(temp->myPage->mmapPtr, TPS_SIZE, PROT_NONE);
 			}// Ref counter is superior to 1. Copy the page contents and write it
-			
 		}// TID WAS FOUND
 	}
 	exit_critical_section();
 	return 0;
 }
+
 
 int tps_clone(pthread_t tid)
 {
@@ -220,7 +220,6 @@ int tps_clone(pthread_t tid)
 	void* tempStorage1 = NULL;
 	//Check if currently running thread has a TPS
 	queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage);
-	
 	// Check if TPS is available for tid provided
 	queue_iterate(memoryQUEUE,find_tid, (void*)tid,(void**) &tempStorage1);
 	if(tempStorage != NULL){
