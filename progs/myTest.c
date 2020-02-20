@@ -200,10 +200,10 @@ int main(int argc, char*argv[]) {
     pthread_join(tid, NULL);
 
     
-    /* Create thread 3: test_offset and wait 
+    /* Create thread 3: test_offset and wait */
     printf("\nTesting TPS read and write at specified offset\n");
     pthread_create(&tid, NULL, test_offset, NULL);
-    pthread_join(tid, NULL); */
+    pthread_join(tid, NULL); 
 
     /* Create thread 4: test_clone */
     printf("\nTesting TPS clone\n");
