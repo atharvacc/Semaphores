@@ -35,10 +35,38 @@ This is a critical section as well for the same reason as sem_down. Also, the un
 #### int sem_getvalue(sem_t sem, int *sval)
 Does what is provided in the header file. Nothing that needs further explanation here. It is consider a critical section as well since the sem value can be modified if a context switch happens after entering it.
 
-
-
-
 ### Testing
-For testing, we primarily used the three test files given, sem_count.c, sem_buffer.c, and sem_prime.c. We started testing using sem_count.c and then moved onto testing with the other two files. We made sure that we entered and exited the critical sections in the right places in each of the functions.
+For testing, we primarily used the three test files given, sem_count.c, sem_buffer.c, and sem_prime.c. We made sure the output matched what was expected.
+
+##TPS
+The goal of the TPS API is to provide a single private and protected memory page (i.e. 4096 bytes) to each thread that requires it.
+
+### Implemention details
+Initialize we used a single struct 
+'''
+struct memoryStorage{
+	pthread_t* tid;
+	char* mmapPtr;
+};
+'''
+
+This sufficed for the first two parts. However, in the last part we had to do Copy-on-Write, therefore, we added a different struct called page, and moved the pointer to the memory there. Thus, in the final version we have two structs defined as follows:
+
+'''
+struct page {
+	char* mmapPtr;
+	int refCounter;
+};
+
+
+struct memoryStorage{
+	pthread_t* tid;
+	struct page* myPage;
+};
+'''
+
+We also have a memoryQueue that checks the mapping from TID to the memory assigned to it, if assigned.
+
+
 
 
