@@ -67,7 +67,7 @@ struct memoryStorage{
 
 We also have a memoryQueue that checks the mapping from TID to the memory assigned to it, if assigned.
 
-#### tps_init()
+#### tps_init(int segv)
 - We set the signal handler for SIGBUS, and SIGSEGV. We use the code provided by the professor for this section with a minor modification. We added a function called "find_char" that finds the matching starting address to p_fault. If found we print out the tps error message and switch back to the original handler.
 ```
 static int find_char(void *data, void *arg)
@@ -82,13 +82,13 @@ static int find_char(void *data, void *arg)
 ```
 - We also initialize the memoryQueue here.
 
-#### tps_create()
+#### tps_create(void)
 We create a new memoryStorage struct, assign a new memory using mmap, and set the refCounter to 1 here. This struct is added to the memoryQUEUE to know which thread ids have been assigned memory.
 
-#### tps_destory()
+#### tps_destroy(void)
 If the tid is present in the memory queue, it destroys the associated struct with the TID and the reference to the page. It also decrements the reference counter for the page. If tid is not present then we return -1.
 
-#### tps_read()
+#### tps_read(size_t offset, size_t length, void *buffer)
 If the length + offset is greater than the size of the memory then we return -1, or if buffer is null. Otherwise, we use mprotect to allow reading from the memory, and read the data to the buffer. We use a function find_tid to find the tid within the queue.
 ```
 static int find_tid(void *data, void *arg)
@@ -102,7 +102,7 @@ static int find_tid(void *data, void *arg)
 }
 ```
 
-#### tps_write()
+#### tps_write(size_t offset, size_t length, void *buffer)
 There are 4 major cases in this. 
 - If the the offset + length is greater than tps size or buffer is null return -1.
 - If on finding the tid in tempStorage, we can't find the TID then we return -1.
@@ -110,7 +110,7 @@ There are 4 major cases in this.
 If the refCounter value is 1. Then no copy on write was done, thus, we can modify the value directly.
 - If the refCounter value was superior to 1, then we need to copy the contents and then write to it. To do this, we first create decrement the refCounter. Then we allocate memory to it. After which, we copy the contents from the old page to this memory, and then write the data from the buffer to the memory. After this, we set the permission to PROT_NONE.
 
-#### tps_clone()
+#### tps_clone(pthread_t tid)
 - For the first part, we checked if the currently running thread had memoryStorage in the queue. If it did, then we return -1.
 - If the tid provided is not present in the queue then we return -1 as well.
 - For the first part, we created a new memory block and copies the contents to it, and subsequently enqued this memoryStorage to the queue.
