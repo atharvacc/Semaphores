@@ -11,7 +11,7 @@
 static pthread_t previous_tid;
 static char msg[TPS_SIZE] = "Hello world!\n";
 static char msg1[TPS_SIZE] = "world!\n";
-static char msg2[TPS_SIZE] = "Goodbye world!\n";
+static char msg2[TPS_SIZE] = "Howdy world!\n";
 
 void *latest_mmap_addr; // global variable to make the address returned by mmap
 void *__real_mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off);
