@@ -43,16 +43,16 @@ The goal of the TPS API is to provide a single private and protected memory page
 
 ### Implemention details
 Initialize we used a single struct 
-'''
+```
 struct memoryStorage{
 	pthread_t* tid;
 	char* mmapPtr;
 };
-'''
+```
 
 This sufficed for the first two parts. However, in the last part we had to do Copy-on-Write, therefore, we added a different struct called page, and moved the pointer to the memory there. Thus, in the final version we have two structs defined as follows:
 
-'''
+```
 struct page {
 	char* mmapPtr;
 	int refCounter;
@@ -63,7 +63,8 @@ struct memoryStorage{
 	pthread_t* tid;
 	struct page* myPage;
 };
-'''
+```
+
 
 We also have a memoryQueue that checks the mapping from TID to the memory assigned to it, if assigned.
 
