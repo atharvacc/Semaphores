@@ -95,14 +95,23 @@ int tps_init(int segv)
 int tps_create(void)
 {
 	enter_critical_section();
+	void* tempStorage1 = NULL;
+	
 	pthread_t *curTid = malloc(sizeof(pthread_t));
 	curTid = pthread_self();
+	queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage1);
+	if(tempStorage1 != NULL){
+		exit_critical_section();
+		return -1;
+	}// if tid is already in memory queue
+	
 	void *mptr = NULL;
 	mptr = mmap(NULL,TPS_SIZE, PROT_NONE, MAP_PRIVATE| MAP_ANON,-1,0); // Create memory
 	if(mptr == MAP_FAILED){
 		exit_critical_section();
 		return -1;
 	} // If failed in memory creation
+	
 	// Create new TPS 
 	struct memoryStorage *tempStorage = malloc(sizeof(struct memoryStorage));
 	tempStorage->myPage = malloc(sizeof(struct page));
