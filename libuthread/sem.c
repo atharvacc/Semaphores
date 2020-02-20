@@ -46,7 +46,7 @@ int sem_down(sem_t sem)
 	}// If can decrement then decrement
 	else if (sem->count == 0){
 		pthread_t* curTid = malloc(sizeof(pthread_t));
-		curTid = (pthread_t*) pthread_self();
+		curTid = pthread_self();
 		queue_enqueue(sem->BLOCKED, curTid);
 		thread_block();	
 	} // Else if count is 0 
@@ -64,7 +64,7 @@ int sem_up(sem_t sem)
 	}// If sem is null then return -1
 	
 	else if (queue_dequeue(sem->BLOCKED,(void**) &blockedTid) == 0){
-		thread_unblock((pthread_t) blockedTid);
+		thread_unblock(blockedTid);
 	}// Then dequee was succesfull 
 	else{
 		sem->count++;
