@@ -50,6 +50,7 @@ endif
 # Linker options
 LDFLAGS := -L$(UTHREADPATH) -luthread
 
+myTest.x: LDFLAGS += -Wl,--wrap=mmap
 # Include path
 INCLUDE := -I$(UTHREADPATH)
 
