@@ -2,7 +2,7 @@
 lib := libuthread.a
 
 objs := queue.o thread.o sem.o tps.o
-objs1:= sem.o tps.o
+objs1:= sem.o tps.o libuthread.a
 
 CC := gcc
 CFLAGS := -Wall -Wextra
