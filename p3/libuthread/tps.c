@@ -24,10 +24,7 @@ struct memoryStorage{
 	struct page* myPage;
 };
 
-struct page {
-	void *tpsLocation;
-	int reference_counter;
-}
+
 
 static queue_t memoryQUEUE;
 
@@ -53,7 +50,7 @@ static int find_char(void *data, void *arg)
     }
     return 0;
 
-
+}
 
 static void segv_handler(int sig, siginfo_t *si, __attribute__((unused)) void *context)
 {
