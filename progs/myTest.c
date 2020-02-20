@@ -95,7 +95,6 @@ void* test_offset(void* ptr) {
     tps_write(0, strlen(msg3) + 1, msg3);
   	tps_write(8, strlen(msg1) + 1, msg1);
   	tps_read(0, TPS_SIZE, buffer);
-    printf("We read %s \n", buffer);
   	assert(!memcmp(msg2, buffer, TPS_SIZE));
 
     // destroy the TPS
