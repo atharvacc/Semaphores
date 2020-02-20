@@ -49,7 +49,6 @@ static int find_char(void *data, void *arg)
         return 1;
     }
     return 0;
-
 }
 
 static void segv_handler(int sig, siginfo_t *si, __attribute__((unused)) void *context)
@@ -95,11 +94,13 @@ int tps_init(int segv)
 
 int tps_create(void)
 {
+	enter_critical_section();
 	pthread_t *curTid = malloc(sizeof(pthread_t));
 	curTid = pthread_self();
 	void *mptr = NULL;
 	mptr = mmap(NULL,TPS_SIZE, PROT_NONE, MAP_PRIVATE| MAP_ANON,-1,0); // Create memory
 	if(mptr == MAP_FAILED){
+		exit_critical_section();
 		return -1;
 	} // If failed in memory creation
 	
@@ -111,30 +112,38 @@ int tps_create(void)
 	tempStorage->myPage->refCounter = 1;
 	
 	queue_enqueue(memoryQUEUE, tempStorage);
+	exit_critical_section();
 	return 0;
 }
 
 int tps_destroy(void)
 {	
+	enter_critical_section();
 	pthread_t *curTid = malloc(sizeof(pthread_t));
 	curTid = pthread_self();
 	void* tempStorage = NULL;
 	if(queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage) == 0){	
 		if (tempStorage == NULL){
+			exit_critical_section();
 			return -1;
 		} // If no tid is found
 		else{
 			struct memoryStorage *temp = (struct memoryStorage*) tempStorage;
-			munmap(temp->myPage->mmapPtr, TPS_SIZE);
+			temp->myPage->refCounter--;
+			free(temp->myPage);
+			free(temp);
 			queue_delete(memoryQUEUE, temp);
 		} // if tid is found then delete it 
 	}
+	exit_critical_section();
 	return 0;
 }
 
 int tps_read(size_t offset, size_t length, void *buffer)
 {
+	enter_critical_section();
 	if( ((offset+length) > TPS_SIZE) || (buffer == NULL) ){
+		exit_critical_section();
 		return -1;
 	} // OUT OF BOUND
 	pthread_t *curTid = malloc(sizeof(pthread_t));
@@ -142,6 +151,7 @@ int tps_read(size_t offset, size_t length, void *buffer)
 	void* tempStorage = NULL;
 	if(queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage) == 0){	
 		if (tempStorage == NULL){
+			exit_critical_section();
 			return -1;
 		} // If no tid is found
 		else{
@@ -151,12 +161,15 @@ int tps_read(size_t offset, size_t length, void *buffer)
 			mprotect(temp->myPage->mmapPtr, TPS_SIZE, PROT_NONE);
 		}// TID WAS FOUND
 	}
+	exit_critical_section();
 	return 0;
 }
 
 int tps_write(size_t offset, size_t length, void *buffer)
 {
+	enter_critical_section();
 	if( ((offset+length) > TPS_SIZE) || (buffer == NULL) ){
+		exit_critical_section();
 		return -1;
 	} // OUT OF BOUND
 	pthread_t *curTid = malloc(sizeof(pthread_t));
@@ -164,6 +177,7 @@ int tps_write(size_t offset, size_t length, void *buffer)
 	void* tempStorage = NULL;
 	if(queue_iterate(memoryQUEUE,find_tid, (void*)curTid,(void**) &tempStorage) == 0){	
 		if (tempStorage == NULL){
+			exit_critical_section();
 			return -1;
 		} // If no tid is found
 		else{
@@ -193,11 +207,13 @@ int tps_write(size_t offset, size_t length, void *buffer)
 			
 		}// TID WAS FOUND
 	}
+	exit_critical_section();
 	return 0;
 }
 
 int tps_clone(pthread_t tid)
 {
+	enter_critical_section();
 	pthread_t *curTid = malloc(sizeof(pthread_t));
 	curTid = pthread_self();
 	void* tempStorage = NULL;
@@ -208,43 +224,23 @@ int tps_clone(pthread_t tid)
 	// Check if TPS is available for tid provided
 	queue_iterate(memoryQUEUE,find_tid, (void*)tid,(void**) &tempStorage1);
 	if(tempStorage != NULL){
+		exit_critical_section();
 		return -1;
 	} // If Currently running thread did have a TPS
 	else if (tempStorage1 == NULL){
+		exit_critical_section();
 		return -1;
 	} // If the tid provided did not have a TPS
 	else{
-		
-	/* for the previous part
-	void *mptr = NULL;
-	mptr = mmap(NULL,TPS_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE| MAP_ANON,-1,0); // Create memory
-	if(mptr == MAP_FAILED){
-		return -1;
-	} // If failed in memory creation
-	struct memoryStorage *cloneStorage = malloc(sizeof(struct memoryStorage));
-	cloneStorage->myPage = malloc(sizeof(struct page));
-	cloneStorage->tid = curTid;
-	cloneStorage->myPage->mmapPtr = (char*) mptr;
-	struct memoryStorage *temp = (struct memoryStorage*) tempStorage1;
-	mprotect(temp->myPage->mmapPtr, TPS_SIZE, PROT_READ);
-	memcpy( cloneStorage->myPage->mmapPtr, temp->myPage->mmapPtr, TPS_SIZE);
-	mprotect(cloneStorage->myPage->mmapPtr, TPS_SIZE, PROT_NONE);
-	mprotect(temp->myPage->mmapPtr, TPS_SIZE, PROT_NONE);
-	queue_enqueue(memoryQUEUE, cloneStorage);
-	*/
 	struct memoryStorage *cloneStorage = malloc(sizeof(struct memoryStorage));
 	cloneStorage->myPage = malloc(sizeof(struct page));
 	struct memoryStorage *temp = (struct memoryStorage*) tempStorage1;
-
 	temp->myPage->refCounter++;
 	cloneStorage->tid = curTid;
 	cloneStorage->myPage = temp->myPage;
-	
-	
-	
 	queue_enqueue(memoryQUEUE, cloneStorage);
 	} // Can be cloned
-
+	exit_critical_section();
 	return 0;
 }
 
