@@ -182,6 +182,8 @@ void *test_seg(void * ptr)
 	tps_addr[0] = '\0';
 
 	printf("intentional segfault test passed!\n");
+	
+	return 0;
 }
 
 int main(int argc, char*argv[]) {
